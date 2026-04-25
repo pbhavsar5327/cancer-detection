@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cancer Detection AI</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Segoe UI',sans-serif;background:#0a0a0f;color:#e0e0e0;min-height:100vh;}
+
+    header{
+      background:linear-gradient(135deg,#0d0d1a,#111128);
+      padding:20px 40px;border-bottom:1px solid #1e1e3a;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .header-left{display:flex;align-items:center;gap:14px;}
+    .logo{font-size:32px;}
+    header h1{font-size:22px;font-weight:700;color:#fff;}
+    header p{font-size:12px;color:#6666aa;margin-top:3px;}
+    .header-badge{background:linear-gradient(135deg,#6c63ff22,#3ecfcf22);border:1px solid #3ecfcf44;border-radius:20px;padding:6px 14px;font-size:11px;color:#3ecfcf;}
+
+    .container{max-width:1000px;margin:36px auto;padding:0 20px;}
+
+    .upload-card{background:#0d0d1a;border:2px dashed #2a2a5a;border-radius:18px;padding:48px 30px;text-align:center;transition:all 0.3s;cursor:pointer;}
+    .upload-card:hover{border-color:#6c63ff;background:#10102a;}
+    .upload-card .icon{font-size:56px;margin-bottom:14px;}
+    .upload-card h2{font-size:18px;color:#ccc;margin-bottom:8px;}
+    .upload-card p{font-size:13px;color:#555577;}
+    #file-input{display:none;}
+
+    .preview-area{margin-top:20px;display:none;text-align:center;}
+    .preview-area img{max-width:280px;max-height:280px;border-radius:14px;border:2px solid #2a2a5a;object-fit:contain;}
+    .file-name{margin-top:8px;font-size:12px;color:#6666aa;}
+
+    .btn-analyze{display:block;margin:22px auto 0;background:linear-gradient(135deg,#6c63ff,#3ecfcf);color:#fff;border:none;padding:14px 52px;border-radius:30px;font-size:16px;font-weight:600;cursor:pointer;transition:opacity 0.2s;}
+    .btn-analyze:hover{opacity:0.85;}
+    .btn-analyze:disabled{opacity:0.35;cursor:not-allowed;}
+
+    .loading{display:none;text-align:center;margin-top:32px;}
+    .spinner{width:50px;height:50px;border:4px solid #1e1e3a;border-top-color:#6c63ff;border-radius:50%;animation:spin 0.85s linear infinite;margin:0 auto 14px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loading p{color:#6666aa;font-size:13px;}
+
+    .result-card{display:none;background:#0d0d1a;border-radius:18px;padding:28px;margin-top:28px;border-left:5px solid #6c63ff;}
+    .result-header{display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+    .result-icon{font-size:38px;}
+    .result-title{font-size:21px;font-weight:700;}
+    .result-sub{font-size:12px;color:#6666aa;margin-top:3px;}
+
+    /* stage badge */
+    .stage-badge{display:inline-block;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:18px;border:1px solid;}
+
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+    .info-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+    .info-box{background:#090912;border-radius:12px;padding:15px 18px;border:1px solid #1e1e3a;}
+    .info-box .label{font-size:10px;color:#5555aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;}
+    .info-box .value{font-size:14px;font-weight:600;color:#e0e0e0;line-height:1.5;}
+
+    .action-box{background:#090912;border-radius:12px;padding:16px 18px;border:1px solid #1e1e3a;margin-bottom:14px;}
+    .action-box .label{font-size:10px;color:#5555aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;}
+    .action-box .value{font-size:13px;color:#bbbbdd;line-height:1.7;}
+
+    .recovery-bar-wrap{background:#090912;border-radius:12px;padding:16px 18px;border:1px solid #1e1e3a;margin-bottom:14px;}
+    .recovery-bar-wrap .label{font-size:10px;color:#5555aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;}
+    .bar-bg{background:#1e1e3a;border-radius:20px;height:10px;overflow:hidden;}
+    .bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#6c63ff,#3ecfcf);transition:width 1.2s ease;}
+    .bar-label{margin-top:8px;font-size:14px;font-weight:700;color:#3ecfcf;}
+
+    .gradcam-section{background:#090912;border-radius:12px;padding:18px;border:1px solid #1e1e3a;margin-bottom:14px;}
+    .gradcam-section .label{font-size:10px;color:#5555aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px;}
+    .gradcam-wrap{display:flex;gap:14px;flex-wrap:wrap;}
+    .gradcam-wrap .img-box{flex:1;min-width:200px;}
+    .gradcam-wrap .img-box p{font-size:11px;color:#5555aa;margin-bottom:6px;}
+    .gradcam-wrap img{width:100%;border-radius:10px;border:1px solid #2a2a5a;}
+    .heat-scale{margin-top:12px;height:10px;border-radius:6px;background:linear-gradient(90deg,#0000ff,#00ffff,#00ff00,#ffff00,#ff0000);}
+    .heat-labels{display:flex;justify-content:space-between;margin-top:4px;}
+    .heat-labels span{font-size:10px;color:#5555aa;}
+
+    /* AI Analysis */
+    .gemini-section{background:#090912;border-radius:12px;padding:18px;border:1px solid #3ecfcf33;margin-bottom:14px;}
+    .gemini-section .label{font-size:10px;color:#3ecfcf;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+    .ai-response{font-size:13px;color:#bbbbdd;line-height:1.9;white-space:pre-wrap;}
+    /* style markdown-like headers in AI response */
+    .ai-response h2,.ai-response h3{color:#3ecfcf;font-size:14px;margin:12px 0 6px;}
+
+    /* Chat */
+    .chat-section{background:#090912;border-radius:12px;padding:18px;border:1px solid #2a2a5a;margin-bottom:14px;}
+    .chat-section .label{font-size:10px;color:#5555aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;}
+    .chat-messages{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+    .msg{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.6;max-width:85%;}
+    .msg.user{background:#1e1e3a;color:#e0e0e0;align-self:flex-end;border-bottom-right-radius:3px;}
+    .msg.ai{background:#0f1f1f;color:#bbdddd;border:1px solid #3ecfcf22;align-self:flex-start;border-bottom-left-radius:3px;}
+    .chat-input-row{display:flex;gap:10px;}
+    .chat-input{flex:1;background:#0a0a1a;border:1px solid #2a2a5a;border-radius:10px;padding:10px 14px;color:#e0e0e0;font-size:13px;outline:none;transition:border-color 0.2s;}
+    .chat-input:focus{border-color:#6c63ff;}
+    .chat-send{background:linear-gradient(135deg,#6c63ff,#3ecfcf);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:13px;cursor:pointer;transition:opacity 0.2s;}
+    .chat-send:hover{opacity:0.85;}
+    .chat-send:disabled{opacity:0.4;cursor:not-allowed;}
+
+    .badge-green  {color:#3ecfcf;}
+    .badge-orange {color:#f0a500;}
+    .badge-red    {color:#ff6b6b;}
+    .badge-darkred{color:#ff3333;}
+
+    .reset-btn{display:block;margin:18px auto 0;background:transparent;color:#6c63ff;border:1px solid #6c63ff;padding:10px 32px;border-radius:30px;font-size:14px;cursor:pointer;transition:all 0.2s;}
+    .reset-btn:hover{background:#6c63ff;color:#fff;}
+
+    .disclaimer{margin-top:20px;font-size:11px;color:#444466;text-align:center;line-height:1.7;}
+    ::-webkit-scrollbar{width:6px;}
+    ::-webkit-scrollbar-track{background:#0a0a0f;}
+    ::-webkit-scrollbar-thumb{background:#2a2a5a;border-radius:3px;}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">🩺</div>
+    <div>
+      <h1>Cancer Detection AI</h1>
+      <p>Upload X-ray → AI analysis + Stage detection + Internet-powered medical info</p>
+    </div>
+  </div>
+  <div class="header-badge">✨ Powered by Gemini AI</div>
+</header>
+
+<div class="container">
+
+  <div class="upload-card" onclick="document.getElementById('file-input').click()">
+    <div class="icon">🫁</div>
+    <h2>Upload Chest X-ray Image</h2>
+    <p>Click here or drag & drop your X-ray (PNG, JPG, JPEG)</p>
+    <input type="file" id="file-input" accept=".png,.jpg,.jpeg" onchange="previewFile(event)"/>
+  </div>
+
+  <div class="preview-area" id="preview-area">
+    <img id="preview-img" src="" alt="X-ray preview"/>
+    <div class="file-name" id="file-name"></div>
+  </div>
+
+  <button class="btn-analyze" id="analyze-btn" onclick="analyzeImage()" disabled>
+    🔬 Analyze X-ray
+  </button>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Analyzing X-ray + fetching latest medical information...</p>
+  </div>
+
+  <div class="result-card" id="result-card">
+
+    <div class="result-header">
+      <div class="result-icon" id="result-icon">🔬</div>
+      <div>
+        <div class="result-title" id="result-title">—</div>
+        <div class="result-sub" id="result-sub">—</div>
+      </div>
+    </div>
+
+    <!-- Stage Badge -->
+    <div id="stage-badge" class="stage-badge" style="display:none;"></div>
+
+    <!-- Main Info Grid -->
+    <div class="info-grid">
+      <div class="info-box">
+        <div class="label">Stage</div>
+        <div class="value" id="r-stage">—</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Curable</div>
+        <div class="value" id="r-curable">—</div>
+      </div>
+    </div>
+
+    <div class="info-grid-3">
+      <div class="info-box">
+        <div class="label">Risk Level</div>
+        <div class="value" id="r-risk">—</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Confidence Score</div>
+        <div class="value" id="r-confidence">—</div>
+      </div>
+      <div class="info-box">
+        <div class="label">Survival Rate</div>
+        <div class="value" id="r-survival">—</div>
+      </div>
+    </div>
+
+    <!-- Symptoms -->
+    <div class="action-box">
+      <div class="label">⚠️ Common Symptoms at This Stage</div>
+      <div class="value" id="r-symptoms">—</div>
+    </div>
+
+    <!-- Treatments -->
+    <div class="action-box">
+      <div class="label">💊 Standard Treatment Options</div>
+      <div class="value" id="r-treatments">—</div>
+    </div>
+
+    <!-- What to do -->
+    <div class="action-box">
+      <div class="label">✅ What You Should Do Now</div>
+      <div class="value" id="r-action">—</div>
+    </div>
+
+    <!-- Recovery Bar -->
+    <div class="recovery-bar-wrap">
+      <div class="label">Recovery Chance</div>
+      <div class="bar-bg">
+        <div class="bar-fill" id="r-bar" style="width:0%"></div>
+      </div>
+      <div class="bar-label" id="r-recovery">—</div>
+    </div>
+
+    <!-- Grad-CAM -->
+    <div class="gradcam-section" id="gradcam-section" style="display:none;">
+      <div class="label">🔥 Cancer Region Heatmap (Grad-CAM)</div>
+      <div class="gradcam-wrap">
+        <div class="img-box">
+          <p>Original X-ray</p>
+          <img id="original-img" src="" alt="Original"/>
+        </div>
+        <div class="img-box">
+          <p>Cancer region highlighted</p>
+          <img id="gradcam-img" src="" alt="Heatmap"/>
+        </div>
+      </div>
+      <div class="heat-scale"></div>
+      <div class="heat-labels">
+        <span>🔵 Normal tissue</span>
+        <span>🟡 Moderate risk</span>
+        <span>🔴 High risk region</span>
+      </div>
+    </div>
+
+    <!-- Gemini AI Analysis -->
+    <div class="gemini-section" id="gemini-section" style="display:none;">
+      <div class="label">🤖 Gemini AI Medical Analysis (Internet-Powered)</div>
+      <div class="ai-response" id="ai-response">
+        <span style="color:#6666aa;font-style:italic;">Fetching latest medical information...</span>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat-section" id="chat-section" style="display:none;">
+      <div class="label">💬 Ask AI About Your Report</div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chat-input"
+          placeholder="e.g. What medicines are used for Stage 2? What foods should I avoid?"
+          onkeydown="if(event.key==='Enter') sendChat()"/>
+        <button class="chat-send" id="chat-send-btn" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+
+    <button class="reset-btn" onclick="resetApp()">Analyze Another X-ray</button>
+  </div>
+
+  <div class="disclaimer">
+    ⚠️ This tool is for educational purposes only.<br>
+    Always consult a certified medical professional for diagnosis and treatment decisions.
+  </div>
+
+</div>
+
+<script>
+  let selectedFile = null;
+  let currentResult = null;
+
+  function previewFile(event) {
+    selectedFile = event.target.files[0];
+    if (!selectedFile) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('preview-img').src = e.target.result;
+      document.getElementById('original-img').src = e.target.result;
+      document.getElementById('file-name').textContent = selectedFile.name;
+      document.getElementById('preview-area').style.display = 'block';
+      document.getElementById('analyze-btn').disabled = false;
+      document.getElementById('result-card').style.display = 'none';
+    };
+    reader.readAsDataURL(selectedFile);
+  }
+
+  function analyzeImage() {
+    if (!selectedFile) return;
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('analyze-btn').disabled = true;
+    document.getElementById('result-card').style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    fetch('/predict', { method: 'POST', body: formData })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('loading').style.display = 'none';
+        currentResult = data;
+        showResult(data);
+      })
+      .catch(() => {
+        document.getElementById('loading').style.display = 'none';
+        alert('Error analyzing image. Please try again.');
+        document.getElementById('analyze-btn').disabled = false;
+      });
+  }
+
+  function showResult(data) {
+    const colorMap     = { green:'badge-green', orange:'badge-orange', red:'badge-red', darkred:'badge-darkred' };
+    const borderColors = { green:'#3ecfcf', orange:'#f0a500', red:'#ff6b6b', darkred:'#ff3333' };
+    const stageBg      = { green:'#3ecfcf22', orange:'#f0a50022', red:'#ff6b6b22', darkred:'#ff333322' };
+    const stageBorder  = { green:'#3ecfcf', orange:'#f0a500', red:'#ff6b6b', darkred:'#ff3333' };
+
+    document.getElementById('result-icon').textContent =
+      data.color === 'green' ? '✅' : data.color === 'orange' ? '⚠️' : '🚨';
+    document.getElementById('result-title').textContent = data.result;
+    document.getElementById('result-title').className   = 'result-title ' + colorMap[data.color];
+    document.getElementById('result-sub').textContent   = 'AI analysis complete — full details below';
+
+    // Stage badge
+    const badge = document.getElementById('stage-badge');
+    badge.textContent = data.stage;
+    badge.style.background  = stageBg[data.color];
+    badge.style.borderColor = stageBorder[data.color];
+    badge.style.color       = stageBorder[data.color];
+    badge.style.display     = 'inline-block';
+
+    document.getElementById('r-stage').textContent     = data.stage;
+    document.getElementById('r-curable').textContent   = data.curable;
+    document.getElementById('r-risk').textContent      = data.risk;
+    document.getElementById('r-confidence').textContent = data.confidence + '%';
+    document.getElementById('r-survival').textContent  = data.survival_rate || 'N/A';
+    document.getElementById('r-symptoms').textContent  = data.symptoms || 'N/A';
+    document.getElementById('r-treatments').textContent = data.treatments || 'N/A';
+    document.getElementById('r-action').textContent    = data.action;
+    document.getElementById('r-recovery').textContent  = data.recovery;
+
+    const recoveryNum = parseInt(data.recovery);
+    document.getElementById('r-bar').style.width = (isNaN(recoveryNum) ? 100 : recoveryNum) + '%';
+
+    const card = document.getElementById('result-card');
+    card.style.borderLeftColor = borderColors[data.color];
+    card.style.display = 'block';
+
+    // Grad-CAM
+    if (data.gradcam) {
+      document.getElementById('gradcam-img').src = data.gradcam;
+      document.getElementById('gradcam-section').style.display = 'block';
+    } else {
+      document.getElementById('gradcam-section').style.display = 'none';
+    }
+
+    // Gemini AI
+    if (data.ai_analysis) {
+      document.getElementById('gemini-section').style.display = 'block';
+      // Format markdown-style headers
+      const formatted = data.ai_analysis
+        .replace(/## (.*)/g, '<br><strong style="color:#3ecfcf;font-size:14px;">$1</strong><br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      document.getElementById('ai-response').innerHTML = formatted;
+      document.getElementById('chat-section').style.display = 'block';
+    }
+  }
+
+  function sendChat() {
+    const input = document.getElementById('chat-input');
+    const msg   = input.value.trim();
+    if (!msg || !currentResult) return;
+
+    addMessage(msg, 'user');
+    input.value = '';
+    document.getElementById('chat-send-btn').disabled = true;
+
+    fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, context: currentResult })
+    })
+    .then(res => res.json())
+    .then(data => {
+      addMessage(data.reply, 'ai');
+      document.getElementById('chat-send-btn').disabled = false;
+    })
+    .catch(() => {
+      addMessage('Sorry, could not get a response. Please try again.', 'ai');
+      document.getElementById('chat-send-btn').disabled = false;
+    });
+  }
+
+  function addMessage(text, sender) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'msg ' + sender;
+    div.textContent = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function resetApp() {
+    selectedFile  = null;
+    currentResult = null;
+    document.getElementById('preview-area').style.display    = 'none';
+    document.getElementById('result-card').style.display     = 'none';
+    document.getElementById('gradcam-section').style.display = 'none';
+    document.getElementById('gemini-section').style.display  = 'none';
+    document.getElementById('chat-section').style.display    = 'none';
+    document.getElementById('chat-messages').innerHTML       = '';
+    document.getElementById('stage-badge').style.display     = 'none';
+    document.getElementById('analyze-btn').disabled = true;
+    document.getElementById('file-input').value = '';
+  }
+</script>
+</body>
+</html>

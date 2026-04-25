@@ -1,0 +1,5 @@
+﻿chest-xray-pneumonia.zip
+cancerenv/
+.env
+__pycache__/
+*.pyc
