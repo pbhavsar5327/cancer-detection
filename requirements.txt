@@ -6,3 +6,4 @@ flask
 pillow
 werkzeug
 gunicorn
+opencv-python-headless
